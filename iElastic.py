@@ -1,8 +1,7 @@
 import os
 import json
-from posixpath import splitext
 import requests
-from elasticsearch import Elasticsearch
+#from elasticsearch import Elasticsearch
 import sys
 import uuid
 from pathlib import Path
@@ -11,13 +10,15 @@ from pathlib import Path
 
 def print_help():
     print(f"""
-    {sys.argv[0]} <json folder> [option]
-    
-
+    {sys.argv[0]}  [-d / -f] <json folder / json file> [option]
     example:
+    {sys.argv[0]} -f /tmp/example.json    --> for single file
+    {sys.argv[0]} /tmp/jsonfolder/     --> looking json file in the target folder recursively
     {sys.argv[0]} /tmp/jsonfile/ --silent
     {sys.argv[0]} /tmp/jsonfile/ --prefix "case01"
     """)
+
+
 def scanRecurse(baseDir):
     '''
     Scan a directory and return a list of all files
@@ -28,11 +29,18 @@ def scanRecurse(baseDir):
             yield entry
         else:
             yield from scanRecurse(entry.path)
+
+
+# if problem with json, use bigjson
+"""
 def readJson(target):
     with open(target, 'r') as f:
         data = bigjson.load(f)
         for index, item in enumerate(data):
             print(index,dict(item))
+"""
+
+
 
 
 def ingestJson2Elastic(t, pre, host, port, v=True):
@@ -49,13 +57,15 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
     try:
         target = t
         prefix = pre
+
+        # maybe we could move this json file checking out of the function
         filePath = Path(t)
         extension = filePath.suffix.lower()
         if extension == ".json":
             full_path = target
         else:
             print("target is not json file --> '{filePath}'")
-            exit()
+            return None
 
     except KeyboardInterrupt as e:
         print(e)
@@ -76,7 +86,7 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
             for index, item in enumerate(data):
                 id = "-".join((prefix,str(uuid.uuid4())))
                 es.index(
-                    index="testing", 
+                    index="testing",   # CHANGE THE ELASTICSEARCH INDEX HERE 
                     id = id,
                     document=item)
                 if v:
@@ -115,25 +125,66 @@ else:
 if '--silent' in optionHandler:
     verbose = False
 
+listDir = []
+if '-d' == sys.argv[1]:
+    directory = sys.argv[2]
+elif '-f' == sys.argv[1]:
+
+    # is the file exists?
+    if os.path.exists(sys.argv[2]):
+        # append path from sys.argv[2] to the listDir
+        listDir = [sys.argv[2]]
+    else:
+        print(f"file '{sys.argv[2]}' not found")
+        exit()
+
+# is directory exists?
+if not os.path.exists(directory):
+    print(f"Directory '{directory}' is not found" )
+    exit()
+
 
 
 
 # get all file names from the directory and save it to list
-listDir = []
 print("-"*30)
-countFile = 0
-for item in scanRecurse(directory):
-    filePath = Path(item)
-    print(filePath)
-    countFile += 1
-    listDir.append(filePath)
+if len(listDir) != 1:
+    for item in scanRecurse(directory):
+        filePath = Path(item)
+        print(filePath)
+        listDir.append(filePath)
+else:
+    print(listDir[0])
 print("-"*30)
-print(f"[*] {countFile} File detected")
+print(f"[*] {len(listDir)} File detected")
 
+if len(listDir) == 0:
+    exit()
+
+
+countNonJsonFile = 0
 for p in listDir:
+
+    # automatic define prefix to the 5 char of the first name file.
     if prefix == None:
         prefix = str(p).split("\\")[-1][:5]
     
+    # check the extension
+    filePath = Path(p)
+    ex = filePath.suffix.lower()
+    if ex == ".json":
+        ingestJson2Elastic(p, prefix, host, port, verbose)
+    else:
+
+        # if the list file less that 10, show the file name of the non json file
+        # else, just count the file.
+        if len(listDir) < 10:
+            print(f"target is not json file --> '{filePath}'")
+        else:
+            countNonJsonFile += 1
+        continue
     
-    ingestJson2Elastic(p, prefix, host, port, verbose)
     #readJson(p)
+# show the number of non json file
+if countNonJsonFile:
+    print(f"Found {countNonJsonFile} non json file, and not loaded")
