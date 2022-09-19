@@ -1,3 +1,4 @@
+from email.policy import strict
 import os
 import json
 import requests
@@ -81,12 +82,12 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
             print("[*] Connected to database")
             print("[*] Waiting for importing data. . .")
             with open(full_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+                data = json.load(f, strict=False)
             count = 0
             for index, item in enumerate(data):
                 id = "-".join((prefix,str(uuid.uuid4())))
                 es.index(
-                    index="testing",   # CHANGE THE ELASTICSEARCH INDEX HERE 
+                    index="tiki",   # CHANGE THE ELASTICSEARCH INDEX HERE 
                     id = id,
                     document=item)
                 if v:
@@ -115,12 +116,12 @@ optionHandler = sys.argv[2:]
 directory = sys.argv[1]
 verbose = True
 
-
-
+# Check for prefix option
 if '--prefix' in optionHandler:
-    prefix = sys.argv[optionHandler.index('--prefix') + 1]
+    prefix = sys.argv[optionHandler.index('tiki') + 2]
 else:
     prefix = None
+
 
 if '--silent' in optionHandler:
     verbose = False
@@ -128,7 +129,7 @@ if '--silent' in optionHandler:
 listDir = []
 if '-d' == sys.argv[1]:
     directory = sys.argv[2]
-
+# is directory exists?
     if not os.path.exists(directory):
         print(f"Directory '{directory}' is not found" )
         exit()
