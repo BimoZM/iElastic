@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-#from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch
 import sys
 import uuid
 from pathlib import Path
@@ -80,7 +80,7 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
             print("\n")
             print("[*] Connected to database")
             print("[*] Waiting for importing data. . .")
-            with open(full_path, 'r') as f:
+            with open(full_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             count = 0
             for index, item in enumerate(data):
@@ -128,6 +128,10 @@ if '--silent' in optionHandler:
 listDir = []
 if '-d' == sys.argv[1]:
     directory = sys.argv[2]
+
+    if not os.path.exists(directory):
+        print(f"Directory '{directory}' is not found" )
+        exit()
 elif '-f' == sys.argv[1]:
 
     # is the file exists?
@@ -139,10 +143,6 @@ elif '-f' == sys.argv[1]:
         exit()
 
 # is directory exists?
-if not os.path.exists(directory):
-    print(f"Directory '{directory}' is not found" )
-    exit()
-
 
 
 
