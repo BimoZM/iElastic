@@ -87,7 +87,7 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
             for index, item in enumerate(data):
                 id = "-".join((prefix,str(uuid.uuid4())))
                 es.index(
-                    index="tiki",   # CHANGE THE ELASTICSEARCH INDEX HERE 
+                    index="user_profiles",   # CHANGE THE ELASTICSEARCH INDEX HERE 
                     id = id,
                     document=item)
                 if v:
@@ -118,7 +118,7 @@ verbose = True
 
 # Check for prefix option
 if '--prefix' in optionHandler:
-    prefix = sys.argv[optionHandler.index('tiki') + 2]
+    prefix = sys.argv[optionHandler.index('--prefix') + 3]
 else:
     prefix = None
 
