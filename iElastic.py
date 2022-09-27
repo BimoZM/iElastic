@@ -127,24 +127,24 @@ if '--silent' in optionHandler:
     verbose = False
 
 listDir = []
-if '-d' == sys.argv[1]:
-    directory = sys.argv[2]
-# is directory exists?
+try:
+    if '-d' == sys.argv[1]:
+        directory = sys.argv[2]
+    # is directory exists?
     if not os.path.exists(directory):
         print(f"Directory '{directory}' is not found" )
         exit()
-elif '-f' == sys.argv[1]:
-
-    # is the file exists?
-    if os.path.exists(sys.argv[2]):
-        # append path from sys.argv[2] to the listDir
-        listDir = [sys.argv[2]]
-    else:
-        print(f"file '{sys.argv[2]}' not found")
-        exit()
-
-# is directory exists?
-
+    elif '-f' == sys.argv[1]:
+        # is the file exists?
+        if os.path.exists(sys.argv[2]):
+            # append path from sys.argv[2] to the listDir
+            listDir = [sys.argv[2]]
+        else:
+            print(f"file '{sys.argv[2]}' not found")
+            exit()
+except NotADirectoryError as e:
+    print("[!] Option -d indicated not a directory")
+    exit()
 
 
 # get all file names from the directory and save it to list
