@@ -1,8 +1,8 @@
-from email.policy import strict
 import os
 import json
 import requests
 from elasticsearch import Elasticsearch
+import elasticsearch5
 import sys
 import uuid
 from pathlib import Path
@@ -70,7 +70,6 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
 
     except KeyboardInterrupt as e:
         print(e)
-
     try:
         print("[*] Connecting to database")
         re = requests.get(f"http://{host}:{port}")
@@ -86,8 +85,16 @@ def ingestJson2Elastic(t, pre, host, port, v=True):
             count = 0
             for index, item in enumerate(data):
                 id = "-".join((prefix,str(uuid.uuid4())))
+                id_exists = True
+
+                # Check for same UUID
+                while id_exists:
+                    if es.exists(index="user_profiles", id=id):
+                        id = "-".join((prefix,str(uuid.uuid4())))
+                        id_exists=False
+
                 es.index(
-                    index="user_profiles",   # CHANGE THE ELASTICSEARCH INDEX HERE 
+                    index="tiki",   # CHANGE THE ELASTICSEARCH INDEX HERE 
                     id = id,
                     document=item)
                 if v:
@@ -130,10 +137,10 @@ listDir = []
 try:
     if '-d' == sys.argv[1]:
         directory = sys.argv[2]
-    # is directory exists?
-    if not os.path.exists(directory):
-        print(f"Directory '{directory}' is not found" )
-        exit()
+        # is directory exists?
+        if not os.path.exists(directory):
+            print(f"Directory '{directory}' is not found" )
+            exit()
     elif '-f' == sys.argv[1]:
         # is the file exists?
         if os.path.exists(sys.argv[2]):
